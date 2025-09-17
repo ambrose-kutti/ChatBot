@@ -2,8 +2,6 @@ import streamlit as st
 import ollama
 import re
 
-#comment
-
 # Page setup
 st.set_page_config(page_title="Municipal Grievance Assistant", layout="centered")
 st.title("Municipal Grievance Assistant")
@@ -26,7 +24,7 @@ if "confirmed" not in st.session_state:
 if "editing_field" not in st.session_state:
     st.session_state.editing_field = None
 
-# Sidebar setup
+# Sidebar
 with st.sidebar:
     st.markdown("## Municipal Grievance Assistant")
     name = st.session_state.user_data["name"]
@@ -36,19 +34,12 @@ with st.sidebar:
     st.markdown("🛠 Features")
     st.markdown("- Smart validation via model")
     st.markdown("- Chat-driven onboarding")
-    st.markdown("- Single edit option")
+    st.markdown("- Grievance classification")
     st.markdown("---")
     st.markdown("Made using Streamlit + Ollama")
-    st.markdown("###  Chat History")
-    user_messages = [msg for msg in st.session_state.messages if msg["role"] == "user"]
-    if user_messages:
-        for i, msg in enumerate(user_messages):
-            st.markdown(f"**{i+1}.** {msg['content']}")
-    else:
-        st.markdown("_No queries yet. Start chatting!_")
 
 # Reset button
-if st.button("🔄 Reset Chat"):
+if st.button(" Reset Chat"):
     st.session_state.messages = []
     st.session_state.user_data = {
         "name": None,
@@ -84,7 +75,7 @@ if user_input:
     with st.chat_message("assistant", avatar="🤖"):
         placeholder = st.empty()
 
-        # Handle edit flow
+        # Edit flow
         if user_input.lower().strip() == "edit":
             st.session_state.editing_field = "awaiting_field"
             prompt = " Which field would you like to update? (name, gender, pin, disability, grievance)"
@@ -111,12 +102,12 @@ if user_input:
             st.session_state.user_data[field] = user_input
             st.session_state.editing_field = None
             summary = "\n".join([f"- **{k.capitalize()}**: {v}" for k, v in st.session_state.user_data.items()])
-            response = f" Updated **{field}** to: {user_input}\n\n📜 Here's your info:\n\n{summary}\n\nType `edit` to change another field, or `confirm` to continue."
+            response = f"Updated **{field}** to: {user_input}\n\nHere's your info:\n\n{summary}\n\nType `edit` to change another field, or `confirm` to continue."
             st.session_state.messages.append({"role": "assistant", "content": response})
             placeholder.markdown(response)
             st.stop()
 
-        # Onboarding with fallback validation
+        # Validation fallback
         stage = st.session_state.data_stage
         def quick_validate(stage, value):
             if stage == "gender":
@@ -132,6 +123,7 @@ if user_input:
                 placeholder.markdown(error)
                 st.stop()
 
+        # Onboarding flow
         if not st.session_state.confirmed:
             if stage != "done":
                 st.session_state.user_data[stage] = user_input
@@ -155,58 +147,59 @@ if user_input:
                     placeholder.markdown(question)
                 else:
                     summary = "\n".join([f"- **{k.capitalize()}**: {v}" for k, v in st.session_state.user_data.items()])
-                    response = f"📜 Here's your info:\n\n{summary}\n\n✏️ Type `edit` to change anything, or `confirm` to continue."
+                    response = f" Here's your info:\n\n{summary}\n\n Type `edit` to change anything, or `confirm` to continue."
                     st.session_state.messages.append({"role": "assistant", "content": response})
                     placeholder.markdown(response)
                 st.stop()
 
+        # Confirmation + classification
         if user_input.lower().strip() == "confirm":
             st.session_state.confirmed = True
-            response = "📜 You've Confirmed that your Information is Accurate.\n\n😊 Happy chatting!"
+
+            grievance_prompt = f"""
+You are a grievance classifier. Based on the user's message, assign it to one of these departments:
+- Allotment
+- Engineering
+- Land
+- Legal
+- Finance
+- Enforcement
+- Establishment
+- Planning
+- Horticulture
+
+User's grievance: "{st.session_state.user_data['grievance']}"
+Respond with only the department name.
+"""
+            classification_response = ollama.chat(
+                model="phi3:mini",
+                messages=[{"role": "system", "content": grievance_prompt}]
+            )
+            department = classification_response["message"]["content"].strip()
+
+            routing_map = {
+                "Allotment": "Plot/Flat Allotment Dept",
+                "Engineering": "Planning Dept",
+                "Land": "Land Plotting Dept",
+                "Legal": "Legal Affairs Cell",
+                "Finance": "Refund & Finance Dept",
+                "Enforcement": "Construction Enforcement Wing",
+                "Establishment": "Letter & Dairy Section",
+                "Planning": "Plan Approval Authority",
+                "Horticulture": "Greenery & Parks Division"
+            }
+            routed_to = routing_map.get(department, "General Grievance Cell")
+
+            response = f"""
+                            You've confirmed your information. Thank You!
+
+                             Grievance classified under: **{department}**  
+                             Routed to: **{routed_to}**
+                            
+                        You can now:
+                            - Type `edit` to update any info
+                            - Type a new grievance to log another issue
+                            """
             st.session_state.messages.append({"role": "assistant", "content": response})
             placeholder.markdown(response)
             st.stop()
-
-        if st.session_state.confirmed:
-            allowed_keywords = ["grievance", "complaint", "issue", "report", "problem"]
-            if not any(keyword in user_input.lower() for keyword in allowed_keywords):
-                response = "⚠️ I'm here to help with municipal grievances only. Please describe your issue."
-                st.session_state.messages.append({"role": "assistant", "content": response})
-                placeholder.markdown(response)
-                st.stop()
-
-        # Model prompt for validation and grievance handling
-        system_context = f"""
-You are a municipal grievance assistant. Your job is to collect user info and validate it conversationally.
-
-If a user enters a misspelled or invalid value (e.g., 'maleee' or '455 4'), respond like:
-- “⚠️ That doesn't look valid. Did you mean 'Male'?”
-- “📮 That PIN seems off. It should be 6 digits.”
-
-Do not accept invalid data silently. Ask for correction before proceeding.
-
-User Info:
-- Name: {st.session_state.user_data['name']}
-- Gender: {st.session_state.user_data['gender']}
-- PIN: {st.session_state.user_data['pin']}
-- Disability: {st.session_state.user_data['disability']}
-- Grievance: {st.session_state.user_data['grievance']}
-"""
-        messages = [{"role": "system", "content": system_context}] + st.session_state.messages
-        try:
-            response_stream = ollama.chat(
-                messages=messages,
-                stream=True 
-            )
-            def stream_generator():
-                full_reply = ""
-                for chunk in response_stream:
-                    content = chunk["message"]["content"]
-                full_reply += content
-                yield content
-            st.session_state.messages.append({"role": "assistant", "content": full_reply})
-            placeholder.write_stream(stream_generator())
-        except Exception as e:
-            error_msg = f"❌ Error: {e}"
-            placeholder.markdown(error_msg)
-            st.session_state.messages.append({"role": "assistant", "content": error_msg})
