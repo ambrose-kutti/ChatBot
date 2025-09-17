@@ -195,7 +195,6 @@ User Info:
         messages = [{"role": "system", "content": system_context}] + st.session_state.messages
         try:
             response_stream = ollama.chat(
-                model="qwen2.5:1.5b",
                 messages=messages,
                 stream=True 
             )
