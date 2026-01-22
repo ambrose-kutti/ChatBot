@@ -46,7 +46,7 @@ with st.sidebar:
         st.markdown("_No queries yet. Start chatting!_")
 
 # Reset button
-if st.button("🔄 Reset Chat"):
+if st.button("Reset Chat"):
     st.session_state.messages = []
     st.session_state.user_data = {
         "name": None,
@@ -73,12 +73,11 @@ for msg in st.session_state.messages:
         st.markdown(msg["content"])
 
 # Chat input
-user_input = st.chat_input("Type your response...📟")
+user_input = st.chat_input("Type your response...")
 if user_input:
     with st.chat_message("user", avatar="🧑‍💻"):
         st.markdown(user_input)
     st.session_state.messages.append({"role": "user", "content": user_input})
-
     with st.chat_message("assistant", avatar="🤖"):
         placeholder = st.empty()
 
@@ -89,7 +88,6 @@ if user_input:
             st.session_state.messages.append({"role": "assistant", "content": prompt})
             placeholder.markdown(prompt)
             st.stop()
-
         if st.session_state.editing_field == "awaiting_field":
             field = user_input.lower().strip()
             if field in st.session_state.user_data:
@@ -103,13 +101,12 @@ if user_input:
                 st.session_state.messages.append({"role": "assistant", "content": error})
                 placeholder.markdown(error)
             st.stop()
-
         if st.session_state.editing_field and st.session_state.editing_field != "awaiting_field":
             field = st.session_state.editing_field
             st.session_state.user_data[field] = user_input
             st.session_state.editing_field = None
             summary = "\n".join([f"- **{k.capitalize()}**: {v}" for k, v in st.session_state.user_data.items()])
-            response = f" Updated **{field}** to: {user_input}\n\n📜 Here's your info:\n\n{summary}\n\nType `edit` to change another field, or `confirm` to continue."
+            response = f" Updated **{field}** to: {user_input}\n\nHere's your info:\n\n{summary}\n\nType `edit` to change another field, or `confirm` to continue."
             st.session_state.messages.append({"role": "assistant", "content": response})
             placeholder.markdown(response)
             st.stop()
@@ -122,14 +119,12 @@ if user_input:
             if stage == "pin":
                 return re.match(r"^\d{6}$", value.replace(" ", ""))
             return True
-
         if not st.session_state.confirmed and stage in ["gender", "pin"]:
             if not quick_validate(stage, user_input):
                 error = f" That doesn't look like a valid {stage}. Please check and try again."
                 st.session_state.messages.append({"role": "assistant", "content": error})
                 placeholder.markdown(error)
                 st.stop()
-
         if not st.session_state.confirmed:
             if stage != "done":
                 st.session_state.user_data[stage] = user_input
@@ -153,22 +148,20 @@ if user_input:
                     placeholder.markdown(question)
                 else:
                     summary = "\n".join([f"- **{k.capitalize()}**: {v}" for k, v in st.session_state.user_data.items()])
-                    response = f"📜 Here's your info:\n\n{summary}\n\n✏️ Type `edit` to change anything, or `confirm` to continue."
+                    response = f"Here's your info:\n\n{summary}\n\n✏️ Type `edit` to change anything, or `confirm` to continue."
                     st.session_state.messages.append({"role": "assistant", "content": response})
                     placeholder.markdown(response)
                 st.stop()
-
         if user_input.lower().strip() == "confirm":
             st.session_state.confirmed = True
-            response = "📜 You've Confirmed that your Information is Accurate.\n\n😊 Happy chatting!"
+            response = "You've Confirmed that your Information is Accurate.\n\n😊 Happy chatting!"
             st.session_state.messages.append({"role": "assistant", "content": response})
             placeholder.markdown(response)
             st.stop()
-
         if st.session_state.confirmed:
             allowed_keywords = ["grievance", "complaint", "issue", "report", "problem"]
             if not any(keyword in user_input.lower() for keyword in allowed_keywords):
-                response = "⚠️ I'm here to help with municipal grievances only. Please describe your issue."
+                response = "I'm here to help with municipal grievances only. Please describe your issue."
                 st.session_state.messages.append({"role": "assistant", "content": response})
                 placeholder.markdown(response)
                 st.stop()
@@ -176,11 +169,9 @@ if user_input:
         # Model prompt for validation and grievance handling
         system_context = f"""
 You are a municipal grievance assistant. Your job is to collect user info and validate it conversationally.
-
 If a user enters a misspelled or invalid value (e.g., 'maleee' or '455 4'), respond like:
-- “⚠️ That doesn't look valid. Did you mean 'Male'?”
-- “📮 That PIN seems off. It should be 6 digits.”
-
+- “That doesn't look valid. Did you mean 'Male'?”
+- “That PIN seems off. It should be 6 digits.”
 Do not accept invalid data silently. Ask for correction before proceeding.
 
 User Info:
@@ -206,6 +197,6 @@ User Info:
             st.session_state.messages.append({"role": "assistant", "content": full_reply})
             placeholder.write_stream(stream_generator())
         except Exception as e:
-            error_msg = f"❌ Error: {e}"
+            error_msg = f"Error: {e}"
             placeholder.markdown(error_msg)
             st.session_state.messages.append({"role": "assistant", "content": error_msg})
