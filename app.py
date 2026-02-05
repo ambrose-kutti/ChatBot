@@ -80,7 +80,7 @@ if user_input:
     st.session_state.messages.append({"role": "user", "content": user_input})
     with st.chat_message("assistant", avatar="🤖"):
         placeholder = st.empty()
-
+        
         # Handle edit flow
         if user_input.lower().strip() == "edit":
             st.session_state.editing_field = "awaiting_field"
@@ -110,7 +110,6 @@ if user_input:
             st.session_state.messages.append({"role": "assistant", "content": response})
             placeholder.markdown(response)
             st.stop()
-
         # Onboarding with fallback validation
         stage = st.session_state.data_stage
         def quick_validate(stage, value):
@@ -165,7 +164,6 @@ if user_input:
                 st.session_state.messages.append({"role": "assistant", "content": response})
                 placeholder.markdown(response)
                 st.stop()
-
         # Model prompt for validation and grievance handling
         system_context = f"""
 You are a municipal grievance assistant. Your job is to collect user info and validate it conversationally.
