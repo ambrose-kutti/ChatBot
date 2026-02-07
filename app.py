@@ -110,6 +110,7 @@ if user_input:
             st.session_state.messages.append({"role": "assistant", "content": response})
             placeholder.markdown(response)
             st.stop()
+            
         # Onboarding with fallback validation
         stage = st.session_state.data_stage
         def quick_validate(stage, value):
@@ -164,21 +165,21 @@ if user_input:
                 st.session_state.messages.append({"role": "assistant", "content": response})
                 placeholder.markdown(response)
                 st.stop()
+                
         # Model prompt for validation and grievance handling
         system_context = f"""
-You are a municipal grievance assistant. Your job is to collect user info and validate it conversationally.
-If a user enters a misspelled or invalid value (e.g., 'maleee' or '455 4'), respond like:
-- “That doesn't look valid. Did you mean 'Male'?”
-- “That PIN seems off. It should be 6 digits.”
-Do not accept invalid data silently. Ask for correction before proceeding.
-
-User Info:
-- Name: {st.session_state.user_data['name']}
-- Gender: {st.session_state.user_data['gender']}
-- PIN: {st.session_state.user_data['pin']}
-- Disability: {st.session_state.user_data['disability']}
-- Grievance: {st.session_state.user_data['grievance']}
-"""
+                            You are a municipal grievance assistant. Your job is to collect user info and validate it conversationally.
+                            If a user enters a misspelled or invalid value (e.g., 'maleee' or '455 4'), respond like:
+                            - “That doesn't look valid. Did you mean 'Male'?”
+                            - “That PIN seems off. It should be 6 digits.”
+                            Do not accept invalid data silently. Ask for correction before proceeding.
+                            User Info:
+                            - Name: {st.session_state.user_data['name']}
+                            - Gender: {st.session_state.user_data['gender']}
+                            - PIN: {st.session_state.user_data['pin']}
+                            - Disability: {st.session_state.user_data['disability']}
+                            - Grievance: {st.session_state.user_data['grievance']}
+                        """
         messages = [{"role": "system", "content": system_context}] + st.session_state.messages
         try:
             response_stream = ollama.chat(
